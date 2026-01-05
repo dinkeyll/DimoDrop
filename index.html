@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>dimodrop 2.6 - Mobile Fix</title>
+    <style>
+        :root {
+            --rarity-1: #4b69ff; --rarity-2: #8847ff; --rarity-3: #d32ee6; --rarity-4: #eb4b4b; --rarity-5: #caab05;
+            --accent: #4CAF50;
+            --gold: #caab05;
+            --bg: #060606;
+            --panel: #111;
+            --border: #222;
+        }
+
+        * { 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; 
+    -webkit-user-select: none; user-select: none;
+    touch-action: pan-y; /* Это разрешит прокрутку вверх-вниз */
+}
+        
+        img { -webkit-user-drag: none; pointer-events: none; }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: var(--bg); color: white; margin: 0; 
+            display: flex; flex-direction: column; 
+            height: 100vh; width: 100vw; overflow: hidden; 
+        }
+        
+        /* --- NAVIGATION & BALANCE FIX --- */
+        .navbar { 
+            display: flex; background: var(--panel); padding: 0 10px; 
+            border-bottom: 1px solid var(--border); align-items: center; 
+            height: 60px; z-index: 100; flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 100%;
+            justify-content: space-between; /* Разделяем вкладки и баланс */
+        }
+        
+        .nav-tabs { 
+            display: flex; gap: 5px; height: 100%; 
+            overflow-x: auto; /* Прокрутка только для вкладок */
+            flex: 1; /* Занимает все доступное место */
+            margin-right: 10px;
+            /* Скрываем скроллбар */
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
+        }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+
+        .nav-tab { 
+            padding: 0 12px; display: flex; align-items: center;
+            cursor: pointer; color: #666; font-weight: 700; 
+            transition: 0.3s; border-bottom: 3px solid transparent; 
+            text-transform: uppercase; font-size: 11px; height: 100%;
+            letter-spacing: 0.5px; white-space: nowrap; /* Текст не переносится */
+        }
+        .nav-tab:hover { color: #aaa; }
+        .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: linear-gradient(to top, rgba(76,175,80,0.1), transparent); }
+        
+        .balance-container {
+            display: flex; align-items: center; flex-shrink: 0; /* Не сжимается */
+        }
+        .balance-display { 
+            background: #1a1a1a; padding: 8px 14px; 
+            border-radius: 6px; border: 1px solid #333; 
+            color: var(--accent); font-weight: 800; font-size: 15px; 
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            text-shadow: 0 0 10px rgba(76,175,80,0.3);
+            white-space: nowrap;
+        }
+
+        /* Layout */
+        .content-area { display: none; padding: 15px; overflow-y: auto; flex: 1; width: 100%; touch-action: pan-y; position: relative; }
+        .content-area.active { display: flex; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Cases Grid */
+        .cases-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); 
+            gap: 20px; width: 100%; max-width: 1400px; margin: 0 auto; padding-bottom: 40px; 
+        }
+        
+        @media (max-width: 600px) {
+            .cases-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                padding: 10px;
+            }
+            .case-visual { height: 90px; }
+            .case-visual img { width: 70px; }
+        }
+
+        .case-card { 
+            background: linear-gradient(145deg, #161616, #111); 
+            border: 1px solid var(--border); border-radius: 12px; 
+            text-align: center; cursor: pointer; transition: 0.3s; 
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .case-card:hover { transform: translateY(-5px); border-color: #444; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .case-card:active { transform: scale(0.98); }
+        
+        .case-visual { height: 120px; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%); position: relative; }
+        .case-visual img { width: 90px; max-height: 100px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,255,255,0.05)); transition: 0.3s; }
+        
+        .case-info { padding: 12px; background: #151515; border-top: 1px solid #222; }
+        .case-info h3 { font-size: 13px; margin: 0 0 8px 0; text-transform: uppercase; color: #ddd; letter-spacing: 0.5px; }
+        .case-price { font-size: 12px; color: var(--accent); font-weight: bold; padding: 4px 12px; background: rgba(76,175,80,0.1); border-radius: 4px; display: inline-block; }
+        
+        .case-card.free-type { border: 1px solid rgba(202, 171, 5, 0.3); }
+        .case-card.free-type .case-price { color: var(--gold); background: rgba(202, 171, 5, 0.1); }
+
+        /* --- UPGRADE LAYOUT --- */
+        .upgrade-layout {
+            flex-direction: column;
+            padding: 0;
+            height: calc(100vh - 60px);
+            overflow: hidden;
+        }
+
+        .upgrade-top-section {
+            flex: 0 0 auto;
+            background: #0a0a0a;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 1px solid #222;
+            z-index: 10;
+        }
+
+        .upgrade-controls {
+            display: flex;
+            width: 100%;
+            max-width: 600px;
+            background: #111;
+            margin-top: 10px;
+            border-radius: 8px;
+            padding: 4px;
+            border: 1px solid #222;
+        }
+        
+        .tab-btn {
+            flex: 1; padding: 10px; border: none; background: transparent;
+            color: #666; font-weight: 700; text-transform: uppercase;
+            cursor: pointer; border-radius: 6px; font-size: 12px; transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: #222; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .upgrade-lists-wrapper {
+            flex: 1;
+            width: 100%;
+            position: relative;
+            background: #060606;
+            overflow: hidden; 
+        }
+
+        .upgrade-list {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    overflow-y: auto; /* Должно быть так */
+    -webkit-overflow-scrolling: touch; /* Добавьте для плавности на iPhone */
+    padding: 15px;
+    padding-bottom: 100px; 
+    display: none; 
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 15px;
+    align-content: start;
+}
+        .upgrade-list.active { display: grid; }
+
+        @media (max-width: 600px) {
+            .upgrade-list {
+                grid-template-columns: repeat(2, 1fr); /* 2 колонки на телефоне */
+                gap: 12px;
+            }
+        }
+
+        /* --- УВЕЛИЧЕННЫЕ КАРТОЧКИ СКИНОВ В АПГРЕЙДЕ --- */
+        .skin-card { 
+            background: linear-gradient(145deg, #1a1a1a, #141414); 
+            padding: 12px; border-radius: 10px; 
+            cursor: pointer; border: 1px solid #2a2a2a; 
+            text-align: center; position: relative; overflow: hidden;
+            transition: all 0.2s;
+            display: flex; flex-direction: column;
+            align-items: center;
+            min-height: 140px; /* Увеличена минимальная высота */
+        }
+        .skin-card:active { transform: scale(0.96); background: #222; }
+        .skin-card.selected { border-color: var(--accent); background: rgba(76,175,80,0.05); transform: scale(0.98); }
+        
+        .skin-card .img-wrapper { 
+            height: 90px; /* Увеличена картинка */
+            width: 100%; 
+            display: flex; align-items: center; justify-content: center; 
+            margin-bottom: 8px; 
+        }
+        .skin-card img { 
+            max-width: 100%; max-height: 100%; 
+            object-fit: contain; z-index: 2; 
+        }
+        
+        .rare-1 img { filter: drop-shadow(0 0 5px rgba(75, 105, 255, 0.4)); } .rare-1::before { background: var(--rarity-1); }
+        .rare-2 img { filter: drop-shadow(0 0 5px rgba(136, 71, 255, 0.4)); } .rare-2::before { background: var(--rarity-2); }
+        .rare-3 img { filter: drop-shadow(0 0 8px rgba(211, 46, 230, 0.5)); } .rare-3::before { background: var(--rarity-3); }
+        .rare-4 img { filter: drop-shadow(0 0 10px rgba(235, 75, 75, 0.6)); } .rare-4::before { background: var(--rarity-4); }
+        .rare-5 img { filter: drop-shadow(0 0 12px rgba(202, 171, 5, 0.7)); } .rare-5::before { background: var(--rarity-5); }
+        
+        .skin-card::before { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; opacity: 0.8; }
+        .skin-card b { display: block; font-size: 11px; color: #ccc; margin: 4px 0; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .skin-card span { color: var(--accent); font-weight: 700; font-size: 12px; }
+
+        /* Wheel & Game */
+        .wheel-box { position: relative; width: 200px; height: 200px; margin: 5px 0; filter: drop-shadow(0 0 20px rgba(0,0,0,0.5)); flex-shrink: 0; }
+        #upgradeCanvas { border-radius: 50%; width: 100%; height: 100%; transform: rotate(0deg); }
+        .upgrade-arrow { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30; pointer-events: none; }
+        .upgrade-arrow::after { content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 20px solid #fff; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5)); }
+        .center-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: #080808; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid #1a1a1a; z-index: 25; }
+        #status-text { font-size: 18px; font-weight: 900; color: #fff; text-shadow: 0 0 12px rgba(255, 255, 255, 0.6); }
+
+        /* Mines */
+        .mines-container { display: flex; flex-direction: column-reverse; gap: 20px; align-items: center; justify-content: center; width: 100%; min-height: 100%; padding: 20px; }
+        .mines-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; background: #131313; border-radius: 20px; border: 1px solid #222; box-shadow: 0 10px 40px rgba(0,0,0,0.5); width: 100%; max-width: 350px; }
+        .mine-cell { height: 80px; background: #1c1c1c; border-radius: 12px; font-size: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; border: 2px solid #2a2a2a; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
+        .mine-cell:hover { background: #252525; transform: scale(1.02); }
+        .mine-cell.revealed { background: #111; border-color: #111; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); }
+        .mine-cell svg { width: 60%; height: 60%; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        /* UI Elements */
+        .btn-main { padding: 14px 40px; border-radius: 6px; border: none; background: linear-gradient(to bottom, #5bc25f, #4CAF50); color: white; cursor: pointer; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 0 #388E3C; transition: 0.1s; position: relative; overflow: hidden; }
+        .btn-main:active { transform: translateY(4px); box-shadow: none; }
+        .btn-main:disabled { background: #333; color: #666; box-shadow: none; cursor: not-allowed; transform: none; }
+        .mult-btn { padding: 8px 16px; font-size: 12px; background: #222; border: 1px solid #333; color: #aaa; border-radius: 6px; cursor: pointer; transition: 0.2s; flex: 1; min-width: 60px; font-weight: bold; }
+        .mult-btn:hover { background: #333; color: white; }
+
+        /* Notifications */
+        .toast-container { position: fixed; top: 70px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 5000; pointer-events: none; }
+        .toast { background: #181818; border-left: 4px solid var(--accent); color: white; padding: 12px 20px; border-radius: 4px; font-size: 13px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s forwards; pointer-events: auto; min-width: 250px; }
+        .toast.error { border-color: var(--rarity-4); }
+
+        /* Modals & Preview */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        
+        .preview-content {
+            width: 90%; max-width: 500px; 
+            background:#111; border-radius:15px; border:1px solid #333; 
+            height: 80vh; /* Фиксированная высота для скролла */
+            box-shadow:0 20px 50px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        
+        .preview-header {
+            padding: 15px; border-bottom: 1px solid #222; 
+            display: flex; justify-content: space-between; align-items: center;
+            background: #161616; flex-shrink: 0;
+        }
+
+        .preview-case-highlight {
+            padding: 20px;
+            background: radial-gradient(circle at center, #222 0%, #0e0e0e 100%);
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column; gap: 15px; flex-shrink: 0;
+        }
+        .preview-case-highlight img { width: 120px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.1)); animation: float 3s ease-in-out infinite; }
+        
+        /* Скролл зона для скинов в кейсе */
+        .preview-scroll-area {
+    flex: 1;
+    overflow-y: auto; /* ВКЛЮЧАЕТ ПРОКРУТКУ */
+    padding: 15px;
+    background: #0a0a0a;
+    border-top: 1px solid #222;
+    -webkit-overflow-scrolling: touch; /* Добавьте эту строку для плавности */
+}
+
+        .roulette-window { width: 90%; max-width: 750px; height: 160px; background: #0a0a0a; border: 2px solid var(--accent); position: relative; overflow: hidden; border-radius: 8px; box-shadow: 0 0 50px rgba(76,175,80,0.2); }
+        .roulette-marker { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; background: #fff; z-index: 10; transform: translateX(-50%); box-shadow: 0 0 10px white; }
+        .roulette-tape { display: flex; position: absolute; left: 0; height: 100%; align-items: center; }
+        .roulette-item { min-width: 150px; width: 150px; height: 100%; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; position: relative; box-sizing: border-box; }
+        .roulette-item img { width: 90px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.1)); transition: 0.3s; }
+        .roulette-item.win-highlight img { transform: scale(1.2); filter: drop-shadow(0 0 20px var(--accent)); }
+        
+        #fx-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9000; }
+
+        ::-webkit-scrollbar { width: 4px; display: none; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+    </style>
+</head>
+<body>
+
+<canvas id="fx-canvas"></canvas>
+<div class="toast-container" id="toasts"></div>
+
+<div class="navbar">
+    <div class="nav-tabs">
+        <div class="nav-tab active" onclick="switchTab('cases')">Кейсы</div>
+        <div class="nav-tab" onclick="switchTab('upgrade')">Апгрейд</div>
+        <div class="nav-tab" onclick="switchTab('mines')">Мины</div>
+        <div class="nav-tab" onclick="switchTab('inventory')">Инвентарь</div>
+    </div>
+    <div class="balance-container">
+        <div class="balance-display">$ <span id="balance-val">0.00</span></div>
+    </div>
+</div>
+
+<div id="cases" class="content-area active"><div class="cases-grid" id="cases-grid"></div></div>
+
+<div id="upgrade" class="content-area upgrade-layout">
+    <div class="upgrade-top-section">
+        <div class="wheel-box">
+            <div class="upgrade-arrow" id="spinner-arrow"></div>
+            <canvas id="upgradeCanvas" width="200" height="200"></canvas>
+            <div class="center-display"><div id="status-text">0%</div></div>
+        </div>
+        
+        <div style="display:flex; gap:8px; margin:10px 0; width:100%; max-width:400px; justify-content:center;">
+            <button class="mult-btn" onclick="setMult(1.5)">x1.5</button>
+            <button class="mult-btn" onclick="setMult(2)">x2</button>
+            <button class="mult-btn" onclick="setMult(5)">x5</button>
+            <button class="mult-btn" onclick="setMult(10)">x10</button>
+        </div>
+        <button id="actionBtn" class="btn-main" onclick="runUpgrade()" style="width:100%; max-width:300px;" disabled>АПГРЕЙД</button>
+
+        <div class="upgrade-controls">
+            <button class="tab-btn active" id="tab-btn-inv" onclick="setUpgradeTab('inv')">Инвентарь</button>
+            <button class="tab-btn" id="tab-btn-shop" onclick="setUpgradeTab('shop')">Магазин (Цель)</button>
+        </div>
+    </div>
+
+    <div class="upgrade-lists-wrapper">
+        <div id="upg-inv-list" class="upgrade-list active"></div>
+        <div id="upg-shop-list" class="upgrade-list"></div>
+    </div>
+</div>
+
+<div id="mines" class="content-area" style="padding:0;">
+    <div class="mines-container">
+        <div class="mines-grid" id="mines-grid"></div>
+        <div class="mines-left" style="width:100%; max-width: 350px; text-align:center;">
+             <h1 style="margin:0; font-size: 24px; text-transform:uppercase; letter-spacing:1px;">Cyber Mines</h1>
+             <p style="color:#666; font-size: 13px; margin-bottom: 20px;">Вход бесплатный! Найди алмазы.</p>
+             <div id="mult-steps" style="display:flex; flex-wrap:wrap; gap:5px; margin: 15px 0; justify-content:center;"></div>
+             <div id="mines-profit" style="font-size: 32px; color:var(--accent); font-weight:900; margin-bottom:20px; text-shadow:0 0 15px rgba(76,175,80,0.3);">$0.00</div>
+             <div class="mines-controls" style="display:flex; gap:10px;">
+                <button id="mines-start-btn" class="btn-main" onclick="startMines()" style="width:100%">ИГРАТЬ (FREE)</button>
+                <button id="mines-cashout-btn" class="btn-main" style="background:var(--gold); display:none; width:100%; box-shadow: 0 4px 0 #9F8604;" onclick="cashoutMines()">ЗАБРАТЬ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="inventory" class="content-area" style="flex-direction:column; align-items:center;">
+    <div style="width:100%; max-width:1100px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:#111; padding:15px; border-radius:8px; border:1px solid #222;">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <h2 style="margin:0; font-size: 16px; text-transform:uppercase;">Инвентарь</h2>
+                <span id="inv-count" style="color:#666; font-size:12px;">0 items</span>
+            </div>
+            <button onclick="sellAll()" class="btn-main" style="background:#eb4b4b; box-shadow:0 4px 0 #c62828; padding:10px 20px; font-size: 11px;">ПРОДАТЬ ВСЕ</button>
+        </div>
+        <div id="full-inv-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap:10px;"></div>
+    </div>
+</div>
+
+<div id="preview-modal" class="modal-overlay">
+    <div class="preview-content">
+        <div class="preview-header">
+            <h1 id="preview-title" style="margin: 0; font-size: 18px;">Case Name</h1>
+            <button onclick="closePreview()" style="background: none; border: 1px solid #444; color: white; padding: 6px 15px; cursor: pointer; border-radius:4px;">Закрыть</button>
+        </div>
+        
+        <div class="preview-case-highlight">
+            <img id="preview-case-img" src="" alt="Case">
+            <button id="buy-case-btn" class="btn-main" style="width:100%; max-width:250px;">ОТКРЫТЬ</button>
+        </div>
+        
+        <div class="preview-scroll-area">
+            <h3 style="margin-top:0; color:#666; font-size:12px; text-transform:uppercase;">Содержимое кейса:</h3>
+            <div id="preview-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap:10px;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="case-modal" class="modal-overlay" style="backdrop-filter: blur(10px);">
+    <div class="roulette-window">
+        <div class="roulette-marker"></div>
+        <div id="roulette-tape" class="roulette-tape"></div>
+    </div>
+</div>
+
+<div id="win-decision-modal" class="modal-overlay" style="z-index: 2000;">
+    <div style="background: #161616; padding: 30px; border-radius: 15px; border: 1px solid #333; text-align: center; width: 340px; box-shadow: 0 0 40px rgba(0,0,0,0.8); animation: fadeIn 0.3s;">
+        <h2 style="color: var(--accent); margin-bottom: 15px; font-size:24px; text-transform:uppercase;">YOU WON!</h2>
+        <div style="background:radial-gradient(circle, rgba(255,255,255,0.05), transparent); padding:20px; border-radius:50%; margin-bottom:10px;">
+            <img id="win-img" src="" style="width: 140px; filter:drop-shadow(0 0 20px rgba(255,255,255,0.2));">
+        </div>
+        <h3 id="win-name" style="font-size: 15px; margin: 10px 0; color:#ddd;">Item</h3>
+        <span id="win-price" style="color: var(--accent); font-weight: 800; font-size: 18px; display:block; margin-bottom:20px;">$0.00</span>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn-main" onclick="processWin(true)">Оставить</button>
+            <button id="sell-instantly-btn" class="btn-main" style="background: #333; box-shadow:0 4px 0 #222;" onclick="processWin(false)">Продать</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const sfx = {
+        tick: new Audio('https://www.soundjay.com/buttons/sounds/button-50.mp3'),
+        win: new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3'),
+        fail: new Audio('https://www.soundjay.com/buttons/sounds/button-10.mp3'),
+        click: new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3'),
+        cash: new Audio('https://www.soundjay.com/misc/sounds/coins-in-hand-2.mp3')
+    };
+    Object.values(sfx).forEach(s => s.volume = 0.25);
+
+    const icons = {
+        coin: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="diamondGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#00f2ff;stop-opacity:1" /><stop offset="100%" style="stop-color:#0078ff;stop-opacity:1" /></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="2.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M32 2 L56 18 L32 62 L8 18 Z" fill="url(#diamondGrad)" stroke="#fff" stroke-width="2" filter="url(#glow)"/><path d="M8 18 L56 18 M32 62 L32 18 M15 18 L32 2 L49 18" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" fill="none"/></svg>`,
+        bomb: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bombGrad" cx="30%" cy="30%" r="70%"><stop offset="0%" style="stop-color:#555;stop-opacity:1" /><stop offset="100%" style="stop-color:#000;stop-opacity:1" /></radialGradient></defs><circle cx="32" cy="36" r="22" fill="url(#bombGrad)" stroke="#333" stroke-width="1"/><path d="M32 14 L32 8" stroke="#888" stroke-width="6" stroke-linecap="square"/><path d="M32 8 Q42 0 48 8" stroke="#d55" stroke-width="2" fill="none"/><path d="M48 8 L50 6 M48 8 L52 8 M48 8 L50 10" stroke="#ffaa00" stroke-width="2" /><path d="M22 26 Q26 30 22 34" stroke="rgba(255,255,255,0.2)" stroke-width="2" fill="none"/></svg>`,
+        fallback: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/1024px-No_image_available.svg.png'
+    };
+
+    let balance = 250, mySkins = [], isPlaying = false;
+    let lastDroppedItem = null, lastFreeCaseTime = 0;
+    let upgradeTab = 'inv'; 
+
+    const GENERIC_WEAPONS = {
+        "P250": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9wMjUwX3NvX3NhbmRfbGlnaHQuODVhNGE2YWQyNzc3ZDlhN2FkNzQ3ZDg4ZDMxZjAyYWVjNjc2MTBmMy5wbmc-/auto/auto/85/notrim/291b7ab2a4ede4e57aa0553a6a358bf8.webp",
+        "P90": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9wOTBfc3Bfc3ByYXlfc2FuZF9saWdodC40OTQ5MzdhZTAzZTBhMDFhMzY2ZTdiNTg2ZTI4NmQ5Zjc0ODJhOWMyLnBuZw--/auto/auto/85/notrim/f2db014ac16ef59c78b92cb6d996720d.webp",
+        "MP7": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tcDdfc3Bfc3ByYXlfYXJteV9saWdodC4yZTYzNThkNzdiODgyZTUwMTEzNmYzZjZjNGI1MGM3NmI5ZTMyNDljLnBuZw--/auto/auto/85/notrim/3bb117cdaaa528e56d5af43f88ffbbd8.webp",
+        "USP": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl91c3Bfc2lsZW5jZXJfY3VfdXNwX2N5cmV4X2xpZ2h0LjQ3Nzc5ODlmZjIzOTM5OTg2Y2RmODk4ODkwZGFlZDhlMjk3OWFkMDAucG5n/auto/auto/85/notrim/ec27bd7e9590c724a3f3711fe75ed33b.webp",
+        "Nova": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9ub3ZhX3NvX3JlZF9saWdodC5mZTZhODE1ZDhlNDE0ZTcyZjdhMWRkY2I5OTAwM2JhNGEwZDM0MDI5LnBuZw--/auto/auto/85/notrim/cea033e9d03d84ced3406d65a4ca8473.webp",
+        "M4A4": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX2dzX200YTRfcGlvbmVlcl9saWdodC5jNjBmYjdhYzA4NWE5ZDYxMWVjMTc0MjM0ZTNkMWY1MDhmODUyZmExLnBuZw--/auto/auto/85/notrim/822f3cca62c944516ef9acde3b326c04.webp",
+        "Glock": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9nbG9ja19jdV9nbG9jay1saXF1ZXNjZW50X2xpZ2h0LmYzODlhMTM4ZTIxNmQ4NTVkMmYwZjhlNWNmODA3OTZkNzc5YjJjMTcucG5n/auto/auto/85/notrim/d3001bb1957c72c727221a15f85296a2.webp",
+        "M4A1": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX3NpbGVuY2VyX2dzX200YTFfZGVjaW1hdG9yX2xpZ2h0LjU2OTFjN2NiODBjMjE4MmZhZGQwMzNlZGM0YTlmY2Y0ZDYyNGM3ZGMucG5n/auto/auto/85/notrim/b76054e6a99dcdd6fd3dd09afe84aa9e.webp",
+        "Deagle": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9kZWFnbGVfYXFfZGVzZXJ0ZWFnbGVfa3VtaWNob2RyYWdvbl9saWdodC5jNmYxNDRhMGY0NmVlZGFmYmExYjMwOGMyOTZmZTMzY2FiYzUzMmY1LnBuZw--/auto/auto/85/notrim/d23cc2359e6bdba0fa8d2710191b16bf.webp",
+        "AK-47": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2dzX2FrNDdfcHJvZmVzc2lvbmFsX2xpZ2h0LjI5NmJhOGIxNTEwZGE0OWFlZjU1MWY2ZTNlOGVkODBlMjE3ZGE3NDYucG5n/auto/auto/85/notrim/0c533a2d47e2b9e06798f778d7c257b6.webp",
+        "AWP": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VfYXdwX2FzaW1vdl9tZWRpdW0uZjQ2NDAyYzVmZDY0ZDkzNzcxMjI4ZDFmNmJlNThhY2IwNDA2OTI2My5wbmc-/auto/auto/85/notrim/a6dac1a65fd2d83251b01a1de6a1eb13.webp",
+        "Knife": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9jdXN0b21fcmVwYWlyX2h5X2NyaW1zb25fd2ViX2xpZ2h0LjZjNWRhMTFlMzUwMmE2OTJmNGNiZDFiMmY0ZTJiYjU1LnBuZw--/auto/auto/85/notrim/609a347201014041a830953c3e215886.webp"
+    };
+
+    const SKIN_IMAGES = {
+        "P250 | Sand Dune": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9wMjUwX3NvX3NhbmRfbGlnaHQuODVhNGE2YWQyNzc3ZDlhN2FkNzQ3ZDg4ZDMxZjAyYWVjNjc2MTBmMy5wbmc-/auto/auto/85/notrim/291b7ab2a4ede4e57aa0553a6a358bf8.webp",
+        "MP7 | Army Recon": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tcDdfc3Bfc3ByYXlfYXJteV9saWdodC4yZTYzNThkNzdiODgyZTUwMTEzNmYzZjZjNGI1MGM3NmI5ZTMyNDljLnBuZw--/auto/auto/85/notrim/3bb117cdaaa528e56d5af43f88ffbbd8.webp",
+        "P90 | Sand Spray": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9wOTBfc3Bfc3ByYXlfc2FuZF9saWdodC40OTQ5MzdhZTAzZTBhMDFhMzY2ZTdiNTg2ZTI4NmQ5Zjc0ODJhOWMyLnBuZw--/auto/auto/85/notrim/f2db014ac16ef59c78b92cb6d996720d.webp",
+        "AUG | Storm": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hdWdfc29fc3Rvcm1mcm9udF9saWdodC45NzhhYTk4MmRjMTVhNDBkNjQ5OWYzN2E3NTkzMTg3MzI4YmQyZjM2LnBuZw--/auto/auto/85/notrim/b6059fbe2ef686bcf75f61f312850b8e.webp",
+        "SG 553 | Army Sheen": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9zZzU1Nl9hbV9hcm15X3NoaW5lX2xpZ2h0LjFiZDg1ODdjYTZkOTExYWFjOWE0NmJmZDhlYjIzMTJjMTUwZjk2M2UucG5n/auto/auto/85/notrim/e3226712cc5963bca99ce24cc25339a9.webp",
+        "SCAR-20 | Sand Mesh": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9zY2FyMjBfc3BfbWVzaF9zYW5kX2xpZ2h0LmI5MzhhZDJlZmMxZDZlYjJiYmRhMzQ2NzU5MTg0N2I3YzQ2ZjAwMjkucG5n/auto/auto/85/notrim/c09d90a443c5775c49bc294d9f541561.webp",
+        "Sawed-Off | Snake Camo": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9zYXdlZG9mZl9zcF9zbmFrZV9saWdodC5mYjg4MjNhZDA1NTViNWEyNmM4NjM3ZGFlNGNlNTc3MjU5OTI4NzdiLnBuZw--/auto/auto/85/notrim/a1181a37c7d76b2863f9be515414fb2a.webp",
+        "MAG-7 | Storm": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tYWc3X3NvX3N0b3JtZnJvbnRfbGlnaHQuNTgwZDFhMGEwMTg3MWVlY2MyYzE2ZjgyMmI3ZjhjNGVjYmNkZjQyNi5wbmc-/auto/auto/85/notrim/212d9a982c22da5c650e6b1a32024d86.webp",
+        "PP-Bizon | Urban": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9iaXpvbl9zcF90YXBlX3Nob3J0X3VyYmFuX2xpZ2h0LjI4NWIxZDczMzU2MDBhYTE0ODhmMmFiNTFhNWM3NDczZjY2MTNiYmMucG5n/auto/auto/85/notrim/acc7f3bb6b3cbe00de7a4f6f850b62bc.webp",
+        "USP-S | Forest Leaves": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl91c3Bfc2lsZW5jZXJfc3BfbGVhdmVzX2xpZ2h0LmI2OWFkZDhlYWUzNmZkNjQzMzk4NzY4Yjc0MTZmZjE1N2FiMjk3NmYucG5n/auto/auto/85/notrim/6a758c8c366b174d6c70d259589a5d82.webp",
+        "Glock-18 | Groundwater": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9nbG9ja19zb19vbGl2ZV9saWdodC44NmM2MmUyNzcxZDg3OTFlZTkyMzUyZTQ1ZjFlYmU1YzhlN2Y3N2IyLnBuZw--/auto/auto/85/notrim/8124518900bc2f655efd5426670a6e6c.webp",
+        "MP9 | Ruby Poison": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tcDlfYW1fbXA5X25pdHJvZ2VuX2xpZ2h0LjFmYzlhOGVkZWY1MGFiZDYxOWM2YWQ4NDk0YTRhYmY1NWFjMWJjZTEucG5n/auto/auto/85/notrim/7392b0bf78f33d700310c5f18c5bbc53.webp",
+        "SG 553 | Aerial": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9zZzU1Nl9jdV9zZzU1M19hZXJpYWxfbGlnaHQuYjE4MmVhMzJjMzk5MTQ1YmIzMjNlNjUzNzg2YjlhZmExMDcwMWQyNS5wbmc-/auto/auto/85/notrim/34b6bc07ca75657ce06a5977a7b2947c.webp",
+        "P250 | Muertos": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9wMjUwX2N1X3AyNTBfbWFuZGFsYV9saWdodC4zNzBlYjRlNzI5YjFkMjdkZWJjYzMyYzZjMWQ5MTBiNjU5MjhmYWYwLnBuZw--/auto/auto/85/notrim/b98ff708443d755590f4ab4b6fe2c85c.webp",
+        "M4A4 | Poly Mag": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX2N1X200YTRfZWxpdGVfdGFjdGljYWxfbGlnaHQuODQ4ZmUwMzU5MmNkYWEyM2YwNWU0NzVlOWQ2YzFjMjI5MWNmMDI5ZS5wbmc-/auto/auto/85/notrim/b8e26da73d372ae0227757b6f23f5fd4.webp",
+        "AWP | PAW": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfYW1fYXdwX3Bhd3Bhd19saWdodC5jOGEyNGE0MzNmY2QxYjBmM2IxZWQyYzQ0YjQ2NGU2MDVlMWU3Y2ZkLnBuZw--/auto/auto/85/notrim/6473e63495fe7b18c7e1cc7025d497f0.webp",
+        "AK-47 | Elite Build": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2N1X2FrNDdfbWFzdGVyeV9saWdodC44ZDlhOTY5NzhhZDhmYTU2MDc0MzMwMzNkYTc0YmYyODA2YjU5MjYyLnBuZw--/auto/auto/85/notrim/a4199c2a3bd9f3121a7e1c0f06f96520.webp",
+        "M4A1-S | Basilisk": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX3NpbGVuY2VyX2FxX200YTFzX2Jhc2lsaXNrX2xpZ2h0LmJjNGJhYmVjOTMwODJhNjNlMThkNDEwZjA2YWZkMGYxMjJlZmM0ZmEucG5n/auto/auto/85/notrim/3954a05cc2b84da19b46184cef04ff2b.webp",
+        "USP-S | Cortex": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl91c3Bfc2lsZW5jZXJfY3VfdXNwX2N1dF9saWdodC4yYWJmOWJlZGE4Y2IzYmZkNzY4MWQ3NGE3OTA1ZTc3MTdjYzZjZmQ4LnBuZw--/auto/auto/85/notrim/0446893f8dfa073f55ee0fd7f5601ac7.webp",
+        "Deagle | Conspiracy": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9kZWFnbGVfY3VfZGVhZ2xlX2F1cmV1c19saWdodC5hNmQzNmU4Y2M0Y2ZkNzY2YzAwNTUxMzQ1NDMwNGJhZTI1YjljMzc5LnBuZw--/auto/auto/85/notrim/20462153982b142658acd87fd57bd1fd.webp",
+        "M4A1-S | Cyrex": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX3NpbGVuY2VyX2N1X200YTFzX2N5cmV4X2xpZ2h0LjI2MmQ2YzdmYTFiYTQ2ZDM2YmQzOWUzOWIwNDRjOGJiNDFlYjNjMmMucG5n/auto/auto/85/notrim/4732b154ab7fe127c5bd4d9bb766e231.webp",
+        "USP-S | Neo-Noir": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl91c3Bfc2lsZW5jZXJfY3VfdXNwc19ub2lyX2xpZ2h0LjY4ZDE0NWVhYmI3NDBmNWE2ZDU1NjczZDhjYmI1ZTkxOTMxNmYyMTYucG5n/auto/auto/85/notrim/0b4e630f1862207551067e9ae66752eb.webp",
+        "Glock-18 | Bullet Queen": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9nbG9ja19jdV9nbG9jazE4X3dhcm1haWRlbl9saWdodC43MjgxY2M3NTAzZjZhZTYyNjRlNTE2ZTdjZTBlNTlkYmJhMTY4ZTk2LnBuZw--/auto/auto/85/notrim/6c08521dd8d79efe6044e4044013ef5f.webp",
+        "AK-47 | Neon Revolution": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2N1X2FrNDdfYW5hcmNoeV9saWdodC5kMjFhNGYxNDQ3YTBjMGM3ODQ4YmY4ZTM5OGQ1MGUwOTcwYzBkZTdmLnBuZw--/auto/auto/85/notrim/9d53a688ec1ae426087dc8f023ef33e8.webp",
+        "M4A4 | Hellfire": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX2N1X200YTRfaGVsbGZpcmVfbGlnaHQuMGZjM2M2Y2UzYzczZDAxMmQ5ZjhkN2VmNjhkNjIwNjVkZmJlMzRjZS5wbmc-/auto/auto/85/notrim/abff9e37db43fd2dc173c59615c042fa.webp",
+        "AWP | Hyper Beast": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VfYXdwX2h5cGVyX2JlYXN0X2xpZ2h0Ljk1YWRjNTkyNTc5ZTJkYjNlMmZjNzU4MDkxZjU0MGM4ZWY2NGY1ZTYucG5n/auto/auto/85/notrim/526d33d62002109270055c4d9d65e9d0.webp",
+        "AK-47 | Bloodsport": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2dzX2FrNDdfYmxvb2RzcG9ydF9saWdodC4zNTY1ZDQ0YTFlZGVhZmIyZjgwNmQxNjExMGM3NTc2ZjE3MDZhN2UzLnBuZw--/auto/auto/85/notrim/11653e101cfd54de6265f1dbb40de909.webp",
+        "Deagle | Printstream": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9kZWFnbGVfY3VfZGVhZ19wcmludHN0cmVhbV9saWdodC42MmMxYzM4NDAyYTcyMzZmMjM0M2EzYzU1NDBkOTU0NDFkOTQwNWI2LnBuZw--/auto/auto/85/notrim/6b9c791594beec6c8795c98e063ea20f.webp",
+        "M4A1-S | Printstream": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX3NpbGVuY2VyX2N1X200YTFzX3ByaW50c3RyZWFtX2xpZ2h0LmFhNjg2ZDJlMjgyMGQ5ZTM3NWViMTQ5YjhmNmExNmI1YThiOTdmOTcucG5n/auto/auto/85/notrim/116536995a28a06668c8e6c535b8d79b.webp",
+        "AK-47 | Vulcan": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2N1X2FrNDdfcnViYmVyX2xpZ2h0LjMzNWZlMmZmNWQ4YTYzZmJlZTM5ZjUxYWI5YTg3ZDNkOGY0MWI1OTIucG5n/auto/auto/85/notrim/ab843047e05699c691809b45b53cf050.webp",
+        "Navaja | Fade": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9neXBzeV9qYWNra25pZmVfYWFfZmFkZV9saWdodC40ODg5MzJmOWRkZmQ5YTBmNzdhNWUzMGM4OWEzNjk5ODkyMDExZmJjLnBuZw--/auto/auto/85/notrim/1eb1b008d7f9746f10aa8698af82b28d.webp",
+        "Shadow Daggers": "https://cdn.csgoskins.gg/public/uih/items/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9wdXNoX2FtX3J1YnlfbWFyYmxlaXplZF9saWdodC5mZmY1NmZhZTBhNDYxNjk0YjUwN2VkMzE4MTI0MTgxYzE1NjU0ZTNlLnBuZw--/auto/auto/85/notrim/110254d5d641c72e67e5a975eaeb3b4d.webp",
+        "Gut | Gamma Doppler": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9ndXRfYW1fZ2FtbWFfZG9wcGxlcl9waGFzZTFfbGlnaHQuYaaMzNWQyNDJjNDU0NDNlNTJmYzY4OTJiMDQ3MzY5Nzk2NzMyM2VjYy5wbmc-/auto/auto/85/notrim/47168952c1726e4f8ea019b26bbf3f77.webp",
+        "Ursus | Marble Fade": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV91cnN1c19hbV9tYXJibGVfZmFkZV9saWdodC45MDEzZWYxMTcyYzI4NjY1MzI4ZjczODEzYjllZmQ4MWFhMjVlY2FkLnBuZw--/auto/auto/85/notrim/1174ec1c0312c3a2ed11ff7a086c896f.webp",
+        "Flip Knife | Lore": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9mbGlwX2N1X2ZsaXBfbG9yZV9saWdodC5kMjg5OTJlYzIyN2VhZGYwZTU4MWQyMmUyMGJhYjA4MmQzNDExNTRmLnBuZw--/auto/auto/85/notrim/ec412af4a063ec9f2ee4226b9c1d7125.webp",
+        "Bayonet | Autotronic": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9iYXlvbmV0X2dzX2JheW9uZXRfYXV0b3Ryb25pY19saWdodC4zN2YzY2M4ZWFiNzNiZGU1MWUyNGEwYjM1ZDRlMzA2YzNhMTA4YWExLnBuZw--/auto/auto/85/notrim/7c7c429f079ab5d578bde02f1e12b7d2.webp",
+        "Karambit | Black Lam": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9rYXJhbWJpdF9jdV9rYXJhbV9zdG9uZXdhc2hfbGlnaHQuOTBmMDhjYzQ2MjU5MGYzMmM4ODFjNDI4YTFjZmJjNzYzMTBlY2Q2NC5wbmc-/auto/auto/85/notrim/27878d7bf80a08f601711a5c3a45419b.webp",
+        "M9 | Tiger Tooth": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9tOV9iYXlvbmV0X2FuX3RpZ2VyX29yYW5nZV9saWdodC41MTg1MzUwMjIxZGFiOTQxMzM2MjI0MDJhOTRjZmUwZGFjZjYyYzM4LnBuZw--/auto/auto/85/notrim/829852df00923b0f38f87ded04cba873.webp",
+        "Butterfly | Slaughter": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9idXR0ZXJmbHlfYW1femVicmFfbGlnaHQuYmVjYTEyMGI5ZTIwNmVlMGVlNmNlNjM5OWViYjg5NjY3MWUzNzFjYi5wbmc-/auto/auto/85/notrim/9e4c9f1e1e032b66c076a5495fdc4785.webp",
+        "AWP | Medusa": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VfbWVkdXNhX2F3cF9saWdodC5iYjgzNDQ5ZjRkOTllNzA3N2NmOGNhY2YyMDI2NGFiOTRkZDk0NWFkLnBuZw--/auto/auto/85/notrim/c668db74d976a0862715ceca7b22570a.webp",
+        "Emerald Glock": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9nbG9ja19hbV9lbWVyYWxkX21hcmJsZWl6ZWRfZ2xvY2tfbGlnaHQuYjhhMTk1YjI4N2Q1ZjMyOWIzOGJmZGQyZDU5OGUyOWIyYWU4MDRlZi5wbmc-/auto/auto/85/notrim/35e06d2ad532851a3874fc033c6fceed.webp",
+        "Hyper Beast Nova": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9ub3ZhX2N1X25vdmFfaHlwZXJiZWFzdF9saWdodC4yMDQ0Y2M0ZWNjZTE4NTEyZWEwZTlhYWQ1ODY4MDY4MTMyNGM0M2Y4LnBuZw--/auto/auto/85/notrim/6a5a35ecda4004c2a9c5948ded11994b.webp",
+        "Golden Koi Deagle": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9kZWFnbGVfYW1fc2NhbGVzX2JyYXZvX2xpZ2h0LjZkMGFiZWE5MTcwMTE2ZGYzYWU0MmJlMjIyMWM0NDY5ZDM4ZmYwMGQucG5n/auto/auto/85/notrim/4ef75227807b57cbcc962c36dabbed99.webp",
+        "Kill Confirmed USP": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl91c3Bfc2lsZW5jZXJfY3VfdXNwX2tpbGxfY29uZmlybWVkX2xpZ2h0LjMxODU2N2IxMDNjMmU0OTdhOGVjYTQ2Y2EzZjdjZTEwYzdkYmRmNjMucG5n/auto/auto/85/notrim/d32108455918f1f9d3af90a8a429d975.webp",
+        "Blood Pressure Gloves": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL21vdG9yY3ljbGVfZ2xvdmVzX21vdG9yY3ljbGVfY2FyYm9uZmliZXJfcmVkX2xpZ2h0LjU0NTkyMzlkNjdhNTZhM2Q3ODU4MGU3ZTY4OTYxOGUxMGJiYmM2YjgucG5n/auto/auto/85/notrim/1d05d8a1f400cfb1aa8ce41f22308f0d.webp",
+        "Fuel Injector AK": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2dzX2FrNDdfc3VwZXJjaGFyZ2VkX2xpZ2h0LjkwMjczOGFmMjMxNWQ5NDRlZWQ2YTE0MTVjZWRkMmRlZTk1YzJmNGUucG5n/auto/auto/85/notrim/a04bf850baaae4c7c290bca2d20109d0.webp",
+        "Frontside Misty": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2N1X2FrNDdfd2ludGVyX3Nwb3J0X2xpZ2h0LmJjOTM2ZTNhMDIyNWQwNzViNThiY2VlMTJiZmQyMmViZTJhNjNiZmUucG5n/auto/auto/85/notrim/837636ea44fc6412afffdbc4b2f9dc3d.webp",
+        "Vulcan AK-47": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2N1X2FrNDdfcnViYmVyX2xpZ2h0LjMzNWZlMmZmNWQ4YTYzZmJlZTM5ZjUxYWI5YTg3ZDNkOGY0MWI1OTIucG5n/auto/auto/85/notrim/ab843047e05699c691809b45b53cf050.webp",
+        "Wildfire AWP": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VfYXdwX3dpbGRmaXJlX2xpZ2h0LmEyMzRiODYxZTU5OWJlOTdmZWU4M2U4YjczYmVlN2RiNjI1NjRhZWQucG5n/auto/auto/85/notrim/563ad806b1f48f34a74926bb22a6a472.webp",
+        "Neo-Noir AWP": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VfYXdwX25lb25vaXJfbGlnaHQuMmM1ZWY0MGJmYzVkYWY4ZGExMThiODliNjcxNWVmYjg4ZTFkMTZiMi5wbmc-/auto/auto/85/notrim/aa95e24fd179110a46dc80257027ba88.webp",
+      "Gut | Gamma Doppler":
+"https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9ndXRfYW1fZ2FtbWFfZG9wcGxlcl9waGFzZTFfbGlnaHQuYWEzNWQyNDJjNDU0NDNlNTJmYzY4OTJiMDQ3MzY5Nzk2NzMyM2VjYy5wbmc-/auto/auto/85/notrim/47168952c1726e4f8ea019b26bbf3f77.webp"
+    };
+
+    const skins = {
+        trash: [
+            {name: "P250 | Sand Dune", price: 0.14, rare: 1, weight: 80},
+            {name: "MP7 | Army Recon", price: 0.15, rare: 1, weight: 80},
+            {name: "P90 | Sand Spray", price: 0.18, rare: 1, weight: 80},
+            {name: "AUG | Storm", price: 0.22, rare: 1, weight: 80}, 
+            {name: "SG 553 | Army Sheen", price: 0.30, rare: 1, weight: 70},
+            {name: "SCAR-20 | Sand Mesh", price: 0.40, rare: 1, weight: 70},
+            {name: "Sawed-Off | Snake Camo", price: 0.55, rare: 2, weight: 60},
+            {name: "MAG-7 | Storm", price: 0.70, rare: 2, weight: 40},
+            {name: "PP-Bizon | Urban", price: 0.90, rare: 2, weight: 40},
+            {name: "USP-S | Forest Leaves", price: 1.10, rare: 2, weight: 20}
+        ],
+        blue: [
+            {name: "Glock-18 | Groundwater", price: 2.00, rare: 2, weight: 100},
+            {name: "MP9 | Ruby Poison", price: 2.50, rare: 2, weight: 90},
+            {name: "SG 553 | Aerial", price: 3.20, rare: 2, weight: 80},
+            {name: "P250 | Muertos", price: 4.50, rare: 2, weight: 70},
+            {name: "M4A4 | Poly Mag", price: 5.50, rare: 2, weight: 60},
+            {name: "AWP | PAW", price: 7.00, rare: 3, weight: 60},
+            {name: "AK-47 | Elite Build", price: 9.00, rare: 3, weight: 50},
+            {name: "M4A1-S | Basilisk", price: 11.00, rare: 3, weight: 40},
+            {name: "USP-S | Cortex", price: 13.50, rare: 3, weight: 30},
+            {name: "Deagle | Conspiracy", price: 16.00, rare: 3, weight: 20}
+        ],
+        red: [
+            {name: "M4A1-S | Cyrex", price: 14.00, rare: 3, weight: 100},
+            {name: "USP-S | Neo-Noir", price: 18.00, rare: 3, weight: 90},
+            {name: "Glock-18 | Bullet Queen", price: 24.00, rare: 3, weight: 80},
+            {name: "AK-47 | Neon Revolution", price: 32.00, rare: 3, weight: 70},
+            {name: "M4A4 | Hellfire", price: 40.00, rare: 3, weight: 60},
+            {name: "AWP | Hyper Beast", price: 55.00, rare: 4, weight: 50},
+            {name: "AK-47 | Bloodsport", price: 70.00, rare: 4, weight: 40},
+            {name: "Deagle | Printstream", price: 85.00, rare: 4, weight: 30},
+            {name: "M4A1-S | Printstream", price: 95.00, rare: 4, weight: 20},
+            {name: "AK-47 | Vulcan", price: 110.00, rare: 4, weight: 15}
+        ],
+        gold: [
+            {name: "Navaja | Fade", price: 380.00, rare: 5, weight: 80},
+            {name: "Shadow Daggers", price: 450.00, rare: 5, weight: 70},
+            {name: "Gut | Gamma Doppler", price: 550.00, rare: 5, weight: 60},
+            {name: "Ursus | Marble Fade", price: 700.00, rare: 5, weight: 50},
+            {name: "Flip Knife | Lore", price: 900.00, rare: 5, weight: 40},
+            {name: "Bayonet | Autotronic", price: 1100.00, rare: 5, weight: 30},
+            {name: "Karambit | Black Lam", price: 1400.00, rare: 5, weight: 25},
+            {name: "M9 | Tiger Tooth", price: 1800.00, rare: 5, weight: 20},
+            {name: "Butterfly | Slaughter", price: 2400.00, rare: 5, weight: 15},
+            {name: "AWP | Medusa", price: 2950.00, rare: 5, weight: 10}
+        ],
+        free_pool: [
+            {name: "Emerald Glock", price: 105.00, rare: 4, weight: 30},
+            {name: "Hyper Beast Nova", price: 145.00, rare: 4, weight: 25},
+            {name: "Golden Koi Deagle", price: 190.00, rare: 4, weight: 20},
+            {name: "Kill Confirmed USP", price: 230.00, rare: 4, weight: 15},
+            {name: "Blood Pressure Gloves", price: 285.00, rare: 4, weight: 12},
+            {name: "Fuel Injector AK", price: 340.00, rare: 4, weight: 10},
+            {name: "Frontside Misty", price: 395.00, rare: 4, weight: 8},
+            {name: "Vulcan AK-47", price: 440.00, rare: 4, weight: 6},
+            {name: "Wildfire AWP", price: 475.00, rare: 4, weight: 5},
+            {name: "Neo-Noir AWP", price: 499.00, rare: 4, weight: 4}
+        ]
+    };
+
+    function resolveImage(name) {
+        if(SKIN_IMAGES[name]) return SKIN_IMAGES[name];
+        for(let key in GENERIC_WEAPONS) {
+            if(name.toLowerCase().includes(key.toLowerCase())) {
+                return GENERIC_WEAPONS[key];
+            }
+        }
+        return icons.fallback;
+    }
+
+    function initSkinImages() {
+        Object.keys(skins).forEach(category => {
+            skins[category].forEach(skin => {
+                if(!skin.img) skin.img = resolveImage(skin.name);
+            });
+        });
+    }
+
+    let cases = [];
+    let storeItems = [];
+
+    // AUTO SAVE
+    setInterval(() => {
+        saveGame();
+    }, 30000);
+
+    function saveGame() { 
+        localStorage.setItem('dimodrop_2_2_free_mines', JSON.stringify({balance, mySkins, lastFreeCaseTime})); 
+    }
+    
+    function loadGame() {
+        const data = localStorage.getItem('dimodrop_2_2_free_mines');
+        if(data) { const p = JSON.parse(data); balance = p.balance; mySkins = p.mySkins; lastFreeCaseTime = p.lastFreeCaseTime || 0; }
+        else {
+            notify("Добро пожаловать! Вам начислено $250", "success");
+        }
+    }
+
+    function notify(msg, type = 'info') {
+        const c = document.getElementById('toasts');
+        const t = document.createElement('div');
+        t.className = `toast ${type}`;
+        t.innerText = msg;
+        c.appendChild(t);
+        setTimeout(() => { t.style.animation = 'fadeOut 0.3s forwards'; setTimeout(() => t.remove(), 300); }, 3000);
+    }
+
+    function switchTab(id) {
+        if(isPlaying && id !== 'mines') { notify("Дождитесь окончания игры!", "error"); return; }
+        sfx.click.play();
+        document.querySelectorAll('.content-area').forEach(a => a.classList.remove('active'));
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
+        
+        if(id === 'upgrade') { 
+            selectedInv = null; selectedShop = null; 
+            upgradeTab = 'inv'; 
+            setUpgradeTab('inv');
+            calculateChance(); 
+            updateUI(); 
+        } else if(id === 'mines') { 
+            initMinesUI(); 
+        } else {
+            updateUI();
+        }
+    }
+
+    // --- CASES ---
+    function initCases() {
+        initSkinImages();
+        
+        cases = [
+            { name: "FREE 2 HOURS", price: 0, loot: skins.free_pool, img: skins.free_pool[9].img, isFree: true },
+            { name: "Trash Box", price: 0.45, loot: skins.trash, img: "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl91c3Bfc2lsZW5jZXJfc3BfbGVhdmVzX2xpZ2h0LmI2OWFkZDhlYWUzNmZkNjQzMzk4NzY4Yjc0MTZmZjE1N2FiMjk3NmYucG5n/auto/auto/85/notrim/6a758c8c366b174d6c70d259589a5d82.webp"},
+            { name: "Cheap Box", price: 6.50, loot: skins.blue, img: "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9kZWFnbGVfY3VfZGVhZ2xlX2F1cmV1c19saWdodC5hNmQzNmU4Y2M0Y2ZkNzY2YzAwNTUxMzQ1NDMwNGJhZTI1YjljMzc5LnBuZw--/auto/auto/85/notrim/20462153982b142658acd87fd57bd1fd.webp"},
+            { name: "Red Case", price: 45.00, loot: skins.red, img: "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2N1X2FrNDdfcnViYmVyX2xpZ2h0LjMzNWZlMmZmNWQ4YTYzZmJlZTM5ZjUxYWI5YTg3ZDNkOGY0MWI1OTIucG5n/auto/auto/85/notrim/ab843047e05699c691809b45b53cf050.webp"},
+            { name: "High Roller", price: 1200.00, loot: skins.gold, img: "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VfbWVkdXNhX2F3cF9saWdodC5iYjgzNDQ5ZjRkOTllNzA3N2NmOGNhY2YyMDI2NGFiOTRkZDk0NWFkLnBuZw--/auto/auto/85/notrim/c668db74d976a0862715ceca7b22570a.webp"}
+        ];
+        
+        storeItems = Object.values(skins).flat().filter(x => x.name).sort((a,b) => a.price - b.price);
+
+        const grid = document.getElementById('cases-grid'); grid.innerHTML = '';
+        cases.forEach(c => {
+            const d = document.createElement('div'); d.className = `case-card ${c.isFree ? 'free-type' : ''}`;
+            d.onclick = () => { sfx.click.play(); showPreview(c); };
+            let pText = c.isFree ? `<span id="free-timer-text">...</span>` : `$${c.price.toFixed(2)}`;
+            d.innerHTML = `<div class="case-visual"><img src="${c.img}" onerror="this.src='${icons.fallback}'"></div><div class="case-info"><h3>${c.name}</h3><div class="case-price">${pText}</div></div>`;
+            grid.appendChild(d);
+        });
+    }
+
+    function updateTimer() {
+        const diff = (lastFreeCaseTime + 7200000) - Date.now();
+        const btn = document.getElementById('free-timer-text');
+        if(!btn) return;
+        if(diff <= 0) btn.innerText = "ГОТОВО";
+        else {
+            const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000);
+            btn.innerText = `${h}ч ${m}м`;
+        }
+    }
+    setInterval(updateTimer, 1000);
+
+    function showPreview(c) {
+        const grid = document.getElementById('preview-grid'); grid.innerHTML = '';
+        document.getElementById('preview-title').innerText = c.name;
+        document.getElementById('preview-case-img').src = c.img; // Устанавливаем картинку кейса
+        
+        [...c.loot].sort((a,b)=>b.price-a.price).forEach(s => {
+            const d = document.createElement('div'); d.className = `skin-card rare-${s.rare}`;
+            d.innerHTML = `<div class="img-wrapper"><img src="${s.img}" onerror="this.src='${icons.fallback}'"></div><b>${s.name}</b><span>$${s.price.toFixed(2)}</span>`;
+            grid.appendChild(d);
+        });
+        const buyBtn = document.getElementById('buy-case-btn');
+        if(c.isFree) {
+            const can = Date.now() - lastFreeCaseTime >= 7200000;
+            buyBtn.disabled = !can; buyBtn.innerText = can ? "ОТКРЫТЬ БЕСПЛАТНО" : "ЖДИТЕ ТАЙМЕР";
+        } else {
+            buyBtn.disabled = balance < c.price; buyBtn.innerText = `КУПИТЬ ЗА $${c.price.toFixed(2)}`;
+        }
+        buyBtn.onclick = () => openCase(c);
+        document.getElementById('preview-modal').style.display = 'flex';
+    }
+    function closePreview() { document.getElementById('preview-modal').style.display = 'none'; }
+
+    function openCase(c) {
+        if(isPlaying) return;
+        if(c.isFree) { if(Date.now() - lastFreeCaseTime < 7200000) return; lastFreeCaseTime = Date.now(); }
+        else { if(balance < c.price) { notify("Недостаточно средств", "error"); return; } balance -= c.price; }
+        
+        closePreview(); isPlaying = true; updateUI();
+        const tape = document.getElementById('roulette-tape'), winIdx = 45; 
+        document.getElementById('case-modal').style.display = 'flex';
+        tape.style.transition = 'none'; tape.style.transform = 'translateX(0)'; tape.innerHTML = '';
+        
+        let winItem = null;
+        for(let i=0; i<60; i++) {
+            const item = (i === winIdx) ? getWeightedItem(c.loot) : c.loot[Math.floor(Math.random()*c.loot.length)];
+            if(i === winIdx) winItem = item;
+            const d = document.createElement('div'); d.className = `roulette-item rare-${item.rare}`;
+            if(i===winIdx) d.id = 'win-item-node';
+            d.innerHTML = `<img src="${item.img}" onerror="this.src='${icons.fallback}'">`; 
+            tape.appendChild(d);
+        }
+        lastDroppedItem = winItem;
+
+        setTimeout(() => {
+            const cardWidth = 150;
+            const containerW = document.querySelector('.roulette-window').offsetWidth;
+            const centerOfTargetCard = (winIdx * cardWidth) + (cardWidth / 2);
+            const centerOfContainer = containerW / 2;
+            const jitter = (Math.random() * 130) - 65; 
+            
+            const target = centerOfTargetCard - centerOfContainer + jitter;
+            
+            tape.style.transition = 'transform 5s cubic-bezier(0.15, 0, 0.10, 1)'; 
+            tape.style.transform = `translateX(-${target}px)`;
+            
+            let ticks = 0;
+            const tInt = setInterval(() => { ticks++; if(ticks < 15) { sfx.tick.currentTime=0; sfx.tick.play(); } else clearInterval(tInt); }, 200);
+        }, 100);
+
+        setTimeout(() => {
+            sfx.win.play();
+            document.getElementById('win-item-node').classList.add('win-highlight');
+            if(winItem.price > 50) fireConfetti();
+            
+            document.getElementById('win-img').src = winItem.img;
+            document.getElementById('win-name').innerText = winItem.name;
+            document.getElementById('win-price').innerText = `$${winItem.price.toFixed(2)}`;
+            document.getElementById('sell-instantly-btn').innerText = `Продать за $${winItem.price.toFixed(2)}`;
+            
+            setTimeout(() => document.getElementById('win-decision-modal').style.display = 'flex', 500);
+            saveGame();
+        }, 5300);
+    }
+
+    function getWeightedItem(loot) {
+        const total = loot.reduce((s, i) => s + i.weight, 0);
+        let r = Math.random() * total;
+        for(const i of loot) { if(r < i.weight) return i; r -= i.weight; }
+        return loot[0];
+    }
+
+    function processWin(keep) {
+        if(keep) { mySkins.push({...lastDroppedItem}); notify(`Предмет добавлен в инвентарь`, "success"); }
+        else { balance += lastDroppedItem.price; sfx.cash.play(); notify(`Продано за $${lastDroppedItem.price.toFixed(2)}`, "success"); }
+        document.getElementById('win-decision-modal').style.display = 'none';
+        document.getElementById('case-modal').style.display = 'none';
+        isPlaying = false; updateUI(); saveGame();
+    }
+
+    // --- UPGRADE SYSTEM ---
+    let selectedInv = null, selectedShop = null, curChance = 0, tarChance = 0, fillProg = 0, resType = null;
+    let arrowRotation = 0;
+
+    function setUpgradeTab(tab) {
+        upgradeTab = tab;
+        document.getElementById('tab-btn-inv').className = tab === 'inv' ? 'tab-btn active' : 'tab-btn';
+        document.getElementById('tab-btn-shop').className = tab === 'shop' ? 'tab-btn active' : 'tab-btn';
+        
+        document.getElementById('upg-inv-list').className = tab === 'inv' ? 'upgrade-list active' : 'upgrade-list';
+        document.getElementById('upg-shop-list').className = tab === 'shop' ? 'upgrade-list active' : 'upgrade-list';
+    }
+
+    function calculateChance() {
+        if(!isPlaying) { 
+            resType = null; 
+            fillProg = 0; 
+            document.getElementById('status-text').style.color = "#fff"; 
+        }
+        
+        if(selectedInv === null || selectedShop === null) {
+            tarChance = 0; 
+            if(!isPlaying) document.getElementById('status-text').innerText = "0%";
+            document.getElementById('actionBtn').disabled = true;
+        } else {
+            tarChance = Math.min(0.95, (mySkins[selectedInv].price / storeItems[selectedShop].price));
+            if(!isPlaying) document.getElementById('status-text').innerText = (tarChance * 100).toFixed(1) + "%";
+            document.getElementById('actionBtn').disabled = mySkins[selectedInv].price >= storeItems[selectedShop].price;
+        }
+        drawWheel();
+        animateChance();
+    }
+
+    function animateChance() {
+        if(!resType && Math.abs(curChance - tarChance) > 0.001) { 
+            curChance += (tarChance - curChance) * 0.1; 
+            drawWheel(); 
+            requestAnimationFrame(animateChance); 
+        }
+    }
+
+    function lerpColor(r1,g1,b1, r2,g2,b2, t) {
+        const r = Math.round(r1 + (r2 - r1) * t);
+        const g = Math.round(g1 + (g2 - g1) * t);
+        const b = Math.round(b1 + (b2 - b1) * t);
+        return `rgb(${r},${g},${b})`;
+    }
+
+    function drawWheel() {
+        const cv = document.getElementById('upgradeCanvas');
+        const ctx = cv.getContext('2d');
+        const cx = cv.width / 2;
+        const cy = cv.height / 2;
+        const r = (cv.width / 2) - 10;
+
+        ctx.clearRect(0,0,cv.width,cv.height); 
+        
+        // Фон круга
+        ctx.beginPath(); 
+        ctx.arc(cx, cy, r, 0, Math.PI*2); 
+        ctx.lineWidth = 15; 
+        ctx.strokeStyle = "#222"; 
+        ctx.stroke();
+        
+        let chanceAngle = (Math.PI * 2) * curChance;
+        let strokeStyle = '#4CAF50';
+        
+        if(resType && fillProg > 0) {
+            chanceAngle = chanceAngle + ((Math.PI * 2 - chanceAngle) * fillProg);
+            if(resType === 'lose') {
+                strokeStyle = lerpColor(76,175,80, 229,57,53, fillProg);
+            }
+        }
+
+        if(chanceAngle > 0) {
+            const startAngle = (Math.PI / 2) - (chanceAngle / 2);
+            ctx.beginPath(); 
+            ctx.arc(cx, cy, r, startAngle, startAngle + chanceAngle); 
+            ctx.strokeStyle = strokeStyle;
+            if(fillProg > 0) {
+                ctx.shadowBlur = 15; ctx.shadowColor = strokeStyle;
+            }
+            ctx.stroke(); ctx.shadowBlur = 0;
+        }
+    }
+
+    function runUpgrade() {
+        if(isPlaying) return; 
+        isPlaying = true;
+        
+        const luckFactor = 1.20; 
+        const win = Math.random() < (tarChance * luckFactor);
+        
+        const startTime = Date.now();
+        const duration = 4000; 
+        
+        const centerRad = Math.PI / 2;
+        const halfRad = (Math.PI * 2 * tarChance) / 2;
+        let randomRad;
+
+        if (win) {
+            randomRad = centerRad - halfRad + Math.random() * (halfRad * 2);
+        } else {
+            const loseArcLength = (Math.PI * 2) - (halfRad * 2);
+            const offset = Math.random() * loseArcLength;
+            randomRad = centerRad + halfRad + offset;
+        }
+        
+        const targetDeg = (randomRad * 180 / Math.PI) + 90;
+        const finalDeg = (360 * 5) + targetDeg;
+        const arrowEl = document.getElementById('spinner-arrow');
+
+        const animate = () => {
+            const now = Date.now();
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const ease = progress < 0.5 
+                ? 4 * progress * progress * progress 
+                : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+            const currentRotation = finalDeg * ease;
+            
+            arrowEl.style.transform = `rotate(${currentRotation}deg)`;
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                finishUpgrade(win);
+            }
+        };
+        
+        animate();
+    }
+    
+    function finishUpgrade(win) {
+        if(win) {
+            sfx.win.play(); 
+            fireConfetti();
+            resType = 'win';
+            document.getElementById('status-text').innerText = "WIN";
+            document.getElementById('status-text').style.color = "var(--accent)";
+            mySkins[selectedInv] = {...storeItems[selectedShop]};
+            notify("Апгрейд успешен!", "success");
+        } else {
+            sfx.fail.play();
+            resType = 'lose';
+            document.getElementById('status-text').innerText = "RIP";
+            document.getElementById('status-text').style.color = "#e53935";
+            mySkins.splice(selectedInv, 1);
+            notify("Предмет потерян...", "error");
+        }
+        saveGame();
+        
+        fillProg = 0;
+        const fillInt = setInterval(() => {
+            fillProg += 0.05;
+            drawWheel();
+            if(fillProg >= 1) { 
+                fillProg = 1; drawWheel();
+                clearInterval(fillInt); 
+                isPlaying = false; 
+                selectedInv = null; 
+                selectedShop = null; 
+                document.getElementById('spinner-arrow').style.transition = 'none';
+                document.getElementById('spinner-arrow').style.transform = 'rotate(0deg)';
+                setTimeout(()=>{
+                    setUpgradeTab('inv'); // Возврат на инвентарь после игры
+                    updateUI(); 
+                    calculateChance();
+                }, 1000); 
+            }
+        }, 16);
+    }
+
+    function setMult(m) {
+        if(isPlaying || selectedInv === null) {
+            notify("Сначала выберите предмет из инвентаря", "error");
+            return;
+        }
+        const target = mySkins[selectedInv].price * m;
+        selectedShop = storeItems.indexOf(storeItems.reduce((p, c) => Math.abs(c.price - target) < Math.abs(p.price - target) ? c : p));
+        
+        setUpgradeTab('shop');
+        
+        updateUI(); 
+        calculateChance(); 
+        sfx.click.play();
+        
+        setTimeout(() => {
+            const el = document.getElementById('upg-shop-list').querySelector(`[data-idx="${selectedShop}"]`);
+            if(el) el.scrollIntoView({block:'center', behavior:'smooth'});
+        }, 100);
+    }
+
+    // --- MINES ---
+    let minesGame = { 
+        active: false, 
+        bombs: [], 
+        revealedCount: 0, 
+        multipliers: [0, 5.5, 9.5, 17, 35, 70, 160] 
+    };
+
+    function initMinesUI() {
+        const mCont = document.getElementById('mult-steps'); mCont.innerHTML = '';
+        minesGame.multipliers.slice(1).forEach((m, i) => {
+            const d = document.createElement('div'); d.id = `step-${i+1}`;
+            d.style = 'padding:4px 8px; background:#222; font-size:10px; border-radius:5px; transition:0.3s;';
+            d.innerText = `$${m.toFixed(2)}`; mCont.appendChild(d);
+        });
+        renderMines();
+    }
+    
+    function renderMines() {
+        const grid = document.getElementById('mines-grid'); grid.innerHTML = '';
+        for(let i=0; i<9; i++) {
+            const cell = document.createElement('div'); cell.className = 'mine-cell'; cell.dataset.idx = i;
+            cell.onclick = () => clickMine(i); grid.appendChild(cell);
+        }
+    }
+
+    function startMines() {
+        if(isPlaying) return;
+        isPlaying = true; minesGame.active = true; minesGame.revealedCount = 0; minesGame.bombs = [];
+        while(minesGame.bombs.length < 3) { let r = Math.floor(Math.random() * 9); if(!minesGame.bombs.includes(r)) minesGame.bombs.push(r); }
+        document.getElementById('mines-start-btn').style.display = 'none'; document.getElementById('mines-cashout-btn').style.display = 'block';
+        updateUI(); renderMines(); sfx.click.play(); updateMinesUI();
+    }
+
+    function clickMine(idx) {
+        if(!minesGame.active) return;
+        const cell = document.querySelector(`.mine-cell[data-idx="${idx}"]`);
+        if(cell.classList.contains('revealed')) return;
+        
+        cell.classList.add('revealed');
+        
+        if(minesGame.bombs.includes(idx)) {
+            minesGame.active = false; isPlaying = false; sfx.fail.play();
+            
+            document.getElementById('mines-cashout-btn').style.display = 'none';
+            
+            cell.style.background = 'var(--rarity-4)'; 
+            cell.innerHTML = icons.bomb; 
+            
+            minesGame.bombs.forEach(b => {
+                const c = document.querySelector(`.mine-cell[data-idx="${b}"]`);
+                c.classList.add('revealed'); 
+                c.innerHTML = icons.bomb; 
+            });
+            notify("Взрыв!", "error");
+            setTimeout(() => { resetMines(); }, 1500);
+        } else {
+            minesGame.revealedCount++; sfx.tick.currentTime = 0; sfx.tick.play();
+            cell.style.background = 'var(--accent)'; 
+            cell.innerHTML = icons.coin;
+            updateMinesUI(); if(minesGame.revealedCount === 6) cashoutMines();
+        }
+    }
+    
+    function updateMinesUI() {
+        document.getElementById('mines-profit').innerText = `$${minesGame.multipliers[minesGame.revealedCount].toFixed(2)}`;
+        document.querySelectorAll('[id^="step-"]').forEach(s => { s.style.background = '#222'; s.style.transform='scale(1)'; });
+        if(minesGame.revealedCount > 0) {
+            const el = document.getElementById(`step-${minesGame.revealedCount}`);
+            el.style.background = 'var(--accent)'; el.style.color = 'white'; el.style.transform='scale(1.2)';
+        }
+    }
+
+    function cashoutMines() {
+        const win = minesGame.multipliers[minesGame.revealedCount];
+        balance += win; 
+        sfx.win.play(); 
+        if(win > 50) fireConfetti();
+        notify(`Выигрыш: $${win.toFixed(2)}`, "success");
+        resetMines(); updateUI(); saveGame();
+    }
+    
+    function resetMines() {
+        minesGame.active = false; isPlaying = false;
+        document.getElementById('mines-start-btn').style.display = 'block'; document.getElementById('mines-cashout-btn').style.display = 'none';
+        initMinesUI(); document.getElementById('mines-profit').innerText = "$0.00";
+    }
+
+    // --- GLOBAL UI & UTILS ---
+
+    function updateUI() {
+        document.getElementById('balance-val').innerText = balance.toFixed(2);
+        
+        const renderList = (el, list, isInv) => {
+            if(!el) return;
+            el.innerHTML = '';
+            list.forEach((s, i) => {
+                const d = document.createElement('div');
+                d.className = `skin-card rare-${s.rare}`;
+                d.dataset.idx = i;
+                if((isInv && selectedInv === i) || (!isInv && selectedShop === i)) d.classList.add('selected');
+                d.innerHTML = `<div class="img-wrapper"><img src="${s.img}" onerror="this.src='${icons.fallback}'"></div><b>${s.name}</b><span>$${s.price.toFixed(2)}</span>`;
+                d.onclick = () => { 
+                    if(!isPlaying) { 
+                        sfx.click.play(); 
+                        if(isInv) selectedInv = i; else selectedShop = i; 
+                        calculateChance(); updateUI(); 
+                    } 
+                };
+                el.appendChild(d);
+            });
+        };
+
+        if(document.getElementById('upgrade').classList.contains('active')) {
+            renderList(document.getElementById('upg-inv-list'), mySkins, true);
+            renderList(document.getElementById('upg-shop-list'), storeItems, false);
+        }
+
+        const invGrid = document.getElementById('full-inv-grid');
+        if(invGrid) {
+            invGrid.innerHTML = '';
+            mySkins.forEach(s => {
+                const d = document.createElement('div'); d.className = `skin-card rare-${s.rare}`;
+                d.innerHTML = `<div class="img-wrapper"><img src="${s.img}" onerror="this.src='${icons.fallback}'"></div><b>${s.name}</b><span>$${s.price.toFixed(2)}</span>`;
+                invGrid.appendChild(d);
+            });
+        }
+        document.getElementById('inv-count').innerText = `${mySkins.length} items`;
+    }
+
+    function sellAll() { 
+        if(mySkins.length === 0) return;
+        let total = 0;
+        mySkins.forEach(s => total += s.price); 
+        balance += total; mySkins = []; 
+        updateUI(); saveGame(); sfx.cash.play(); notify(`Продано все за $${total.toFixed(2)}`, "success");
+    }
+
+    // --- VISUAL FX ---
+    const fxCv = document.getElementById('fx-canvas'), fxCtx = fxCv.getContext('2d');
+    fxCv.width = window.innerWidth; fxCv.height = window.innerHeight;
+    let particles = [];
+
+    function fireConfetti() {
+        for(let i=0; i<100; i++) {
+            particles.push({
+                x: window.innerWidth/2, y: window.innerHeight/2,
+                vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15 - 5,
+                c: `hsl(${Math.random()*360}, 100%, 50%)`,
+                s: Math.random()*8+4, life: 1
+            });
+        }
+    }
+
+    function loopFx() {
+        fxCtx.clearRect(0,0,fxCv.width, fxCv.height);
+        particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.01;
+            fxCtx.fillStyle = p.c; fxCtx.fillRect(p.x, p.y, p.s, p.s);
+            if(p.life <= 0) particles.splice(i, 1);
+        });
+        requestAnimationFrame(loopFx);
+    }
+    loopFx();
+
+    window.onresize = () => { fxCv.width = window.innerWidth; fxCv.height = window.innerHeight; };
+
+    loadGame(); initCases(); updateUI();
+</script>
+</body>
+</html>
