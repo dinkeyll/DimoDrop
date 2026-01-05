@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <!-- Yandex.RTB -->
-<script>window.yaContextCb=window.yaContextCb||[]</script>
-<script src="https://yandex.ru/ads/system/context.js" async></script>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     
@@ -1128,36 +1125,6 @@
     window.onresize = () => { fxCv.width = window.innerWidth; fxCv.height = window.innerHeight; };
 
     loadGame(); initCases(); updateUI();
-</script>
-  <!-- Yandex.RTB R-A-18361473-1 -->
-<script>
-window.addEventListener("load", () => {
-    const render = (imageId) => {
-        window.yaContextCb.push(() => {
-            Ya.Context.AdvManager.render({
-                "renderTo": imageId,
-                "blockId": "R-A-18361473-1",
-                "type": "inImage"
-            })
-        })
-    }
-    const renderInImage = (images) => {
-        if (!images.length) {
-            return
-        }
-        const image = images.shift()
-        image.id = `yandex_rtb_R-A-18361473-1-${Math.random().toString(16).slice(2)}`
-        if (image.tagName === "IMG" && !image.complete) {
-            image.addEventListener("load", () => {
-                render(image.id)
-            }, { once: true })
-        } else {
-            render(image.id)
-        }
-        renderInImage(images)
-    }
-    renderInImage(Array.from(document.querySelectorAll("img")))
-}, { once: true })
 </script>
 </body>
 </html>
