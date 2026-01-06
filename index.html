@@ -253,43 +253,17 @@
         .content-area.active { display: flex; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-       /* Cases Grid - НАСТРОЙКИ ДЛЯ ПК */
+        /* Cases Grid */
         .cases-grid { 
-            display: grid; 
-            /* ПК: Фиксируем размер карточки (220px), чтобы не было гигантов */
-            grid-template-columns: repeat(auto-fill, 220px); 
-            /* ПК: Центрируем их на экране */
-            justify-content: center;
-            gap: 20px; 
-            width: 100%; 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            padding-bottom: 40px; 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); 
+            gap: 20px; width: 100%; max-width: 1400px; margin: 0 auto; padding-bottom: 40px; 
         }
         
-        /* МОБИЛЬНАЯ ВЕРСИЯ (Остается без изменений) */
         @media (max-width: 600px) {
             .cases-grid {
-                /* Телефон: Игнорируем настройки ПК и делаем 2 колонки на всю ширину */
-                grid-template-columns: repeat(2, 1fr) !important;
+                grid-template-columns: repeat(2, 1fr);
                 gap: 10px;
                 padding: 10px;
-                /* Сбрасываем центрирование, чтобы на телефоне заполнялось всё пространство */
-                justify-content: stretch; 
-            }
-            .case-visual { height: 90px; }
-            .case-visual img { width: 70px; }
-        }
-        
-        /* МОБИЛЬНАЯ ВЕРСИЯ (Остается без изменений) */
-        @media (max-width: 600px) {
-            .cases-grid {
-                /* Телефон: Игнорируем настройки ПК и делаем 2 колонки на всю ширину */
-                grid-template-columns: repeat(2, 1fr) !important;
-                gap: 10px;
-                padding: 10px;
-                /* Сбрасываем центрирование, чтобы на телефоне заполнялось всё пространство */
-                justify-content: stretch; 
             }
             .case-visual { height: 90px; }
             .case-visual img { width: 70px; }
