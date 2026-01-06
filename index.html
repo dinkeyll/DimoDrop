@@ -24,6 +24,177 @@
     -webkit-user-select: none; user-select: none;
     touch-action: pan-y; /* Это разрешит прокрутку вверх-вниз */
 }
+      /* --- MOBILE MENU --- */
+.mobile-menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 150;
+}
+
+.profile-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    z-index: 150;
+}
+
+.mobile-menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 200;
+    backdrop-filter: blur(5px);
+}
+
+.mobile-menu-content {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 280px;
+    height: 100%;
+    background: #111;
+    border-right: 1px solid #333;
+    transition: left 0.3s ease;
+    z-index: 201;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.mobile-menu-content.active {
+    left: 0;
+}
+
+.mobile-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #333;
+}
+
+.mobile-menu-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+.mobile-nav-item {
+    padding: 15px 20px;
+    margin: 5px 0;
+    background: #1a1a1a;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #aaa;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 14px;
+    transition: 0.3s;
+    border: 1px solid transparent;
+}
+
+.mobile-nav-item:active {
+    transform: scale(0.98);
+}
+
+.mobile-nav-item.active {
+    background: rgba(76,175,80,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Stats Modal */
+.stats-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+}
+
+.stats-content {
+    background: #111;
+    border-radius: 15px;
+    border: 1px solid #333;
+    padding: 30px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+}
+
+.stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #333;
+}
+
+.stats-close {
+    background: none;
+    border: 1px solid #444;
+    color: white;
+    padding: 6px 15px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.stats-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #222;
+}
+
+.stats-label {
+    color: #888;
+    font-size: 13px;
+}
+
+.stats-value {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .mobile-menu-btn,
+    .profile-btn {
+        display: block;
+    }
+    
+    .nav-tabs {
+        display: none !important;
+    }
+    
+    .navbar {
+        justify-content: space-between;
+        padding: 0 15px;
+    }
+}
         
         img { -webkit-user-drag: none; pointer-events: none; }
 
@@ -305,14 +476,65 @@
 <div class="toast-container" id="toasts"></div>
 
 <div class="navbar">
+    <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+    
     <div class="nav-tabs">
         <div class="nav-tab active" onclick="switchTab('cases')">Кейсы</div>
         <div class="nav-tab" onclick="switchTab('upgrade')">Апгрейд</div>
         <div class="nav-tab" onclick="switchTab('mines')">Мины</div>
         <div class="nav-tab" onclick="switchTab('inventory')">Инвентарь</div>
     </div>
-    <div class="balance-container">
-        <div class="balance-display">$ <span id="balance-val">0.00</span></div>
+    
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="profile-btn" onclick="toggleStats()">👤</button>
+        <div class="balance-container">
+            <div class="balance-display">$ <span id="balance-val">0.00</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu-overlay" id="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
+<div class="mobile-menu-content" id="mobile-menu-content">
+    <div class="mobile-menu-header">
+        <h2 style="margin: 0; font-size: 20px; color: var(--accent);">МЕНЮ</h2>
+        <button class="mobile-menu-close" onclick="closeMobileMenu()">×</button>
+    </div>
+    
+    <div class="mobile-nav-item active" onclick="switchTabMobile('cases')">🎁 Кейсы</div>
+    <div class="mobile-nav-item" onclick="switchTabMobile('upgrade')">⬆️ Апгрейд</div>
+    <div class="mobile-nav-item" onclick="switchTabMobile('mines')">💎 Мины</div>
+    <div class="mobile-nav-item" onclick="switchTabMobile('inventory')">🎒 Инвентарь</div>
+</div>
+
+<!-- Stats Modal -->
+<div class="stats-modal" id="stats-modal">
+    <div class="stats-content">
+        <div class="stats-header">
+            <h2 style="margin: 0; font-size: 20px; color: var(--accent);">СТАТИСТИКА</h2>
+            <button class="stats-close" onclick="closeStats()">Закрыть</button>
+        </div>
+        
+        <div class="stats-row">
+            <span class="stats-label">Баланс:</span>
+            <span class="stats-value" id="stat-balance">$0.00</span>
+        </div>
+        <div class="stats-row">
+            <span class="stats-label">Предметов:</span>
+            <span class="stats-value" id="stat-items">0</span>
+        </div>
+        <div class="stats-row">
+            <span class="stats-label">Стоимость инвентаря:</span>
+            <span class="stats-value" id="stat-inv-value">$0.00</span>
+        </div>
+        <div class="stats-row">
+            <span class="stats-label">Открыто кейсов:</span>
+            <span class="stats-value" id="stat-cases">0</span>
+        </div>
+        <div class="stats-row" style="border: none;">
+            <span class="stats-label">Игр в Мины:</span>
+            <span class="stats-value" id="stat-mines">0</span>
+        </div>
     </div>
 </div>
 
@@ -336,7 +558,7 @@
 
         <div class="upgrade-controls">
             <button class="tab-btn active" id="tab-btn-inv" onclick="setUpgradeTab('inv')">Инвентарь</button>
-            <button class="tab-btn" id="tab-btn-shop" onclick="setUpgradeTab('shop')">Магазин (Цель)</button>
+            <button class="tab-btn" id="tab-btn-shop" onclick="setUpgradeTab('shop')">желаемое</button>
         </div>
     </div>
 
@@ -350,12 +572,12 @@
     <div class="mines-container">
         <div class="mines-grid" id="mines-grid"></div>
         <div class="mines-left" style="width:100%; max-width: 350px; text-align:center;">
-             <h1 style="margin:0; font-size: 24px; text-transform:uppercase; letter-spacing:1px;">Cyber Mines</h1>
+             <h1 style="margin:0; font-size: 24px; text-transform:uppercase; letter-spacing:1px;">Mines</h1>
              <p style="color:#666; font-size: 13px; margin-bottom: 20px;">Вход бесплатный! Найди алмазы.</p>
              <div id="mult-steps" style="display:flex; flex-wrap:wrap; gap:5px; margin: 15px 0; justify-content:center;"></div>
              <div id="mines-profit" style="font-size: 32px; color:var(--accent); font-weight:900; margin-bottom:20px; text-shadow:0 0 15px rgba(76,175,80,0.3);">$0.00</div>
              <div class="mines-controls" style="display:flex; gap:10px;">
-                <button id="mines-start-btn" class="btn-main" onclick="startMines()" style="width:100%">ИГРАТЬ (FREE)</button>
+                <button id="mines-start-btn" class="btn-main" onclick="startMines()" style="width:100%">ИГРАТЬ</button>
                 <button id="mines-cashout-btn" class="btn-main" style="background:var(--gold); display:none; width:100%; box-shadow: 0 4px 0 #9F8604;" onclick="cashoutMines()">ЗАБРАТЬ</button>
             </div>
         </div>
@@ -412,11 +634,6 @@
         <div style="display: flex; flex-direction: column; gap: 10px;">
             <button class="btn-main" onclick="processWin(true)">Оставить</button>
             <button id="sell-instantly-btn" class="btn-main" style="background: #333; box-shadow:0 4px 0 #222;" onclick="processWin(false)">Продать</button>
-          <div style="padding: 20px; opacity: 0.5; font-size: 10px;">
-  <h1>DimoDrop - Симулятор открытия кейсов</h1>
-  <p>Играйте в увлекательный симулятор, собирайте редкие скины и делитесь результатами.</p>
-  <a href="#">Политика конфиденциальности</a> | <a href="#">Контакты</a>
-</div>
         </div>
     </div>
 </div>
@@ -508,10 +725,12 @@
         "Wildfire AWP": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VfYXdwX3dpbGRmaXJlX2xpZ2h0LmEyMzRiODYxZTU5OWJlOTdmZWU4M2U4YjczYmVlN2RiNjI1NjRhZWQucG5n/auto/auto/85/notrim/563ad806b1f48f34a74926bb22a6a472.webp",
         "Neo-Noir AWP": "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VfYXdwX25lb25vaXJfbGlnaHQuMmM1ZWY0MGJmYzVkYWY4ZGExMThiODliNjcxNWVmYjg4ZTFkMTZiMi5wbmc-/auto/auto/85/notrim/aa95e24fd179110a46dc80257027ba88.webp",
       "Gut | Gamma Doppler":
-"https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9ndXRfYW1fZ2FtbWFfZG9wcGxlcl9waGFzZTFfbGlnaHQuYWEzNWQyNDJjNDU0NDNlNTJmYzY4OTJiMDQ3MzY5Nzk2NzMyM2VjYy5wbmc-/auto/auto/85/notrim/47168952c1726e4f8ea019b26bbf3f77.webp"
+"https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9rbmlmZV9ndXRfYW1fZ2FtbWFfZG9wcGxlcl9waGFzZTFfbGlnaHQuYWEzNWQyNDJjNDU0NDNlNTJmYzY4OTJiMDQ3MzY5Nzk2NzMyM2VjYy5wbmc-/auto/auto/85/notrim/47168952c1726e4f8ea019b26bbf3f77.webp",
+      "M4A4 | Buzz Kill":
+"https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX2dzX200YTRfc2VjdG9yX2xpZ2h0LjE3M2ZhZTEzNzcwM2MyZTU0ZDI0OWQxNzI2Nzg4ZDA2MTEyMmQ4OWUucG5n/auto/auto/85/notrim/22d666bcce3d5f05e516effeecdc6eb6.webp"
     };
 
-    const skins = {
+   const skins = {
         trash: [
             {name: "P250 | Sand Dune", price: 0.14, rare: 1, weight: 80},
             {name: "MP7 | Army Recon", price: 0.15, rare: 1, weight: 80},
@@ -536,17 +755,18 @@
             {name: "USP-S | Cortex", price: 13.50, rare: 3, weight: 30},
             {name: "Deagle | Conspiracy", price: 16.00, rare: 3, weight: 20}
         ],
+        // --- ОБНОВЛЕННЫЙ RED CASE (Улучшенная окупаемость) ---
         red: [
-            {name: "M4A1-S | Cyrex", price: 14.00, rare: 3, weight: 100},
-            {name: "USP-S | Neo-Noir", price: 18.00, rare: 3, weight: 90},
-            {name: "Glock-18 | Bullet Queen", price: 24.00, rare: 3, weight: 80},
-            {name: "AK-47 | Neon Revolution", price: 32.00, rare: 3, weight: 70},
-            {name: "M4A4 | Hellfire", price: 40.00, rare: 3, weight: 60},
-            {name: "AWP | Hyper Beast", price: 55.00, rare: 4, weight: 50},
-            {name: "AK-47 | Bloodsport", price: 70.00, rare: 4, weight: 40},
-            {name: "Deagle | Printstream", price: 85.00, rare: 4, weight: 30},
-            {name: "M4A1-S | Printstream", price: 95.00, rare: 4, weight: 20},
-            {name: "AK-47 | Vulcan", price: 110.00, rare: 4, weight: 15}
+            {name: "M4A1-S | Cyrex", price: 25.00, rare: 3, weight: 80}, // Было 14.00
+            {name: "USP-S | Neo-Noir", price: 30.00, rare: 3, weight: 75}, // Было 18.00
+            {name: "Glock-18 | Bullet Queen", price: 38.00, rare: 3, weight: 70}, // Было 24.00
+            {name: "AK-47 | Neon Revolution", price: 42.00, rare: 3, weight: 65}, // Было 32.00
+            {name: "M4A4 | Hellfire", price: 48.00, rare: 3, weight: 60}, // Было 40.00 (Окуп +)
+            {name: "AWP | Hyper Beast", price: 65.00, rare: 4, weight: 45}, // Было 55.00
+            {name: "AK-47 | Bloodsport", price: 80.00, rare: 4, weight: 35}, // Было 70.00
+            {name: "Deagle | Printstream", price: 95.00, rare: 4, weight: 25}, // Было 85.00
+            {name: "M4A1-S | Printstream", price: 110.00, rare: 4, weight: 15}, // Было 95.00
+            {name: "AK-47 | Vulcan", price: 135.00, rare: 4, weight: 10} // Было 110.00
         ],
         gold: [
             {name: "Navaja | Fade", price: 380.00, rare: 5, weight: 80},
@@ -571,6 +791,14 @@
             {name: "Vulcan AK-47", price: 440.00, rare: 4, weight: 6},
             {name: "Wildfire AWP", price: 475.00, rare: 4, weight: 5},
             {name: "Neo-Noir AWP", price: 499.00, rare: 4, weight: 4}
+        ],
+        // --- НОВЫЙ КЕЙС ЗА $200 ---
+        elite: [
+            {name: "AWP | Hyper Beast", price: 60.00, rare: 3, weight: 100}, // Ровно 30% от 200 (слив)
+            {name: "Emerald Glock", price: 120.00, rare: 4, weight: 60}, // Средний слив
+            {name: "Golden Koi Deagle", price: 195.00, rare: 4, weight: 40}, // Почти в ноль
+            {name: "Fuel Injector AK", price: 350.00, rare: 5, weight: 20}, // Хороший плюс
+            {name: "M4A4 | Buzz Kill", price: 500.00, rare: 5, weight: 5} // Ровно 250% от 200 (джекпот)
         ]
     };
 
@@ -651,6 +879,8 @@
             { name: "Trash Box", price: 0.45, loot: skins.trash, img: "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl91c3Bfc2lsZW5jZXJfc3BfbGVhdmVzX2xpZ2h0LmI2OWFkZDhlYWUzNmZkNjQzMzk4NzY4Yjc0MTZmZjE1N2FiMjk3NmYucG5n/auto/auto/85/notrim/6a758c8c366b174d6c70d259589a5d82.webp"},
             { name: "Cheap Box", price: 6.50, loot: skins.blue, img: "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9kZWFnbGVfY3VfZGVhZ2xlX2F1cmV1c19saWdodC5hNmQzNmU4Y2M0Y2ZkNzY2YzAwNTUxMzQ1NDMwNGJhZTI1YjljMzc5LnBuZw--/auto/auto/85/notrim/20462153982b142658acd87fd57bd1fd.webp"},
             { name: "Red Case", price: 45.00, loot: skins.red, img: "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hazQ3X2N1X2FrNDdfcnViYmVyX2xpZ2h0LjMzNWZlMmZmNWQ4YTYzZmJlZTM5ZjUxYWI5YTg3ZDNkOGY0MWI1OTIucG5n/auto/auto/85/notrim/ab843047e05699c691809b45b53cf050.webp"},
+            { name: "Elite Box", price: 200.00, loot: skins.elite, img:
+"https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9tNGExX2dzX200YTRfc2VjdG9yX2xpZ2h0LjE3M2ZhZTEzNzcwM2MyZTU0ZDI0OWQxNzI2Nzg4ZDA2MTEyMmQ4OWUucG5n/auto/auto/85/notrim/22d666bcce3d5f05e516effeecdc6eb6.webp"},
             { name: "High Roller", price: 1200.00, loot: skins.gold, img: "https://cdn.csgoskins.gg/public/uih/products/aHR0cHM6Ly9jZG4uY3Nnb3NraW5zLmdnL3B1YmxpYy9pbWFnZXMvYnVja2V0cy9lY29uL2RlZmF1bHRfZ2VuZXJhdGVkL3dlYXBvbl9hd3BfY3VfbWVkdXNhX2F3cF9saWdodC5iYjgzNDQ5ZjRkOTllNzA3N2NmOGNhY2YyMDI2NGFiOTRkZDk0NWFkLnBuZw--/auto/auto/85/notrim/c668db74d976a0862715ceca7b22570a.webp"}
         ];
         
@@ -1128,7 +1358,97 @@
     loopFx();
 
     window.onresize = () => { fxCv.width = window.innerWidth; fxCv.height = window.innerHeight; };
+// --- MOBILE MENU & STATS ---
+function toggleMobileMenu() {
+    const overlay = document.getElementById('mobile-menu-overlay');
+    const menu = document.getElementById('mobile-menu-content');
+    
+    if (menu.classList.contains('active')) {
+        closeMobileMenu();
+    } else {
+        overlay.style.display = 'block';
+        menu.classList.add('active');
+        sfx.click.play();
+    }
+}
 
+function closeMobileMenu() {
+    const overlay = document.getElementById('mobile-menu-overlay');
+    const menu = document.getElementById('mobile-menu-content');
+    
+    overlay.style.display = 'none';
+    menu.classList.remove('active');
+}
+
+function switchTabMobile(id) {
+    switchTab(id);
+    closeMobileMenu();
+    
+    // Update mobile menu active state
+    document.querySelectorAll('.mobile-nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+}
+
+let statsData = { casesOpened: 0, minesPlayed: 0 };
+
+function toggleStats() {
+    const modal = document.getElementById('stats-modal');
+    if (modal.style.display === 'flex') {
+        closeStats();
+    } else {
+        updateStatsDisplay();
+        modal.style.display = 'flex';
+        sfx.click.play();
+    }
+}
+
+function closeStats() {
+    document.getElementById('stats-modal').style.display = 'none';
+}
+
+function updateStatsDisplay() {
+    const invValue = mySkins.reduce((sum, s) => sum + s.price, 0);
+    
+    document.getElementById('stat-balance').innerText = `$${balance.toFixed(2)}`;
+    document.getElementById('stat-items').innerText = mySkins.length;
+    document.getElementById('stat-inv-value').innerText = `$${invValue.toFixed(2)}`;
+    document.getElementById('stat-cases').innerText = statsData.casesOpened;
+    document.getElementById('stat-mines').innerText = statsData.minesPlayed;
+}
+
+// Обновите функцию saveGame (найдите строку ~194):
+function saveGame() { 
+    localStorage.setItem('dimodrop_2_2_free_mines', JSON.stringify({
+        balance, 
+        mySkins, 
+        lastFreeCaseTime,
+        statsData
+    })); 
+}
+
+// Обновите функцию loadGame (найдите строку ~197):
+function loadGame() {
+    const data = localStorage.getItem('dimodrop_2_2_free_mines');
+    if(data) { 
+        const p = JSON.parse(data); 
+        balance = p.balance; 
+        mySkins = p.mySkins; 
+        lastFreeCaseTime = p.lastFreeCaseTime || 0;
+        statsData = p.statsData || { casesOpened: 0, minesPlayed: 0 };
+    } else {
+        notify("Добро пожаловать! Вам начислено $250", "success");
+    }
+}
+
+// Обновите функцию processWin (найдите строку ~362):
+// Добавьте после строки "document.getElementById('win-decision-modal').style.display = 'none';"
+statsData.casesOpened++;
+
+// Обновите функцию startMines (найдите строку ~472):
+// Добавьте после строки "isPlaying = true; minesGame.active = true;"
+statsData.minesPlayed++;
     loadGame(); initCases(); updateUI();
 </script>
 </body>
