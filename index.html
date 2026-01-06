@@ -255,12 +255,20 @@
 
         /* Cases Grid */
         .cases-grid { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); 
-            gap: 20px; width: 100%; max-width: 1400px; margin: 0 auto; padding-bottom: 40px; 
+            display: grid; 
+            /* НА ПК: Фиксированная ширина 220px, чтобы не растягивались */
+            grid-template-columns: repeat(auto-fill, 220px); 
+            justify-content: center; /* Центрирует сетку на экране */
+            gap: 20px; 
+            width: 100%; 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            padding-bottom: 40px; 
         }
         
         @media (max-width: 600px) {
             .cases-grid {
+                /* НА ТЕЛЕФОНЕ: Оставляем как было (2 колонки резиновые) */
                 grid-template-columns: repeat(2, 1fr);
                 gap: 10px;
                 padding: 10px;
@@ -275,6 +283,7 @@
             text-align: center; cursor: pointer; transition: 0.3s; 
             display: flex; flex-direction: column; overflow: hidden;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            height: fit-content; /* ВАЖНО: Запрещает карточке тянуться вниз */
         }
         .case-card:hover { transform: translateY(-5px); border-color: #444; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .case-card:active { transform: scale(0.98); }
@@ -288,7 +297,6 @@
         
         .case-card.free-type { border: 1px solid rgba(202, 171, 5, 0.3); }
         .case-card.free-type .case-price { color: var(--gold); background: rgba(202, 171, 5, 0.1); }
-
         /* --- UPGRADE LAYOUT --- */
         .upgrade-layout {
             flex-direction: column;
@@ -1453,3 +1461,4 @@ statsData.minesPlayed++;
 </script>
 </body>
 </html>
+
