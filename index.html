@@ -253,19 +253,46 @@
         .content-area.active { display: flex; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Cases Grid */
-        /* Cases Grid */
+       /* Cases Grid - НАСТРОЙКИ ДЛЯ ПК */
         .cases-grid { 
             display: grid; 
-            /* ИЗМЕНЕНИЕ: Фиксируем ширину карточки на 220px вместо растягивания (1fr) */
+            /* ПК: Фиксируем размер карточки (220px), чтобы не было гигантов */
             grid-template-columns: repeat(auto-fill, 220px); 
-            /* ИЗМЕНЕНИЕ: Центрируем карточки, если их мало в ряду */
+            /* ПК: Центрируем их на экране */
             justify-content: center;
             gap: 20px; 
             width: 100%; 
             max-width: 1400px; 
             margin: 0 auto; 
             padding-bottom: 40px; 
+        }
+        
+        /* МОБИЛЬНАЯ ВЕРСИЯ (Остается без изменений) */
+        @media (max-width: 600px) {
+            .cases-grid {
+                /* Телефон: Игнорируем настройки ПК и делаем 2 колонки на всю ширину */
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px;
+                padding: 10px;
+                /* Сбрасываем центрирование, чтобы на телефоне заполнялось всё пространство */
+                justify-content: stretch; 
+            }
+            .case-visual { height: 90px; }
+            .case-visual img { width: 70px; }
+        }
+        
+        /* МОБИЛЬНАЯ ВЕРСИЯ (Остается без изменений) */
+        @media (max-width: 600px) {
+            .cases-grid {
+                /* Телефон: Игнорируем настройки ПК и делаем 2 колонки на всю ширину */
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 10px;
+                padding: 10px;
+                /* Сбрасываем центрирование, чтобы на телефоне заполнялось всё пространство */
+                justify-content: stretch; 
+            }
+            .case-visual { height: 90px; }
+            .case-visual img { width: 70px; }
         }
 
         .case-card { 
