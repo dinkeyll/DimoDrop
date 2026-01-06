@@ -256,20 +256,29 @@
         /* Cases Grid */
         .cases-grid { 
             display: grid; 
-            /* НА ПК: Фиксированная ширина 220px, чтобы не растягивались */
+            /* НА ПК: Фиксированные колонки */
             grid-template-columns: repeat(auto-fill, 220px); 
-            justify-content: center; /* Центрирует сетку на экране */
+            
+            /* ИСПРАВЛЕНИЕ ОТРЫВА: Выравниваем кейсы в начале сетки, а саму сетку центрируем margins */
+            justify-content: start; 
+            justify-items: center; /* Центрируем саму карточку в ячейке */
+            
             gap: 20px; 
-            width: 100%; 
-            max-width: 1400px; 
-            margin: 0 auto; 
+            
+            /* Центрируем блок с кейсами на странице */
+            width: fit-content;
+            margin: 0 auto;
+            max-width: 100%;
+            
             padding-bottom: 40px; 
         }
         
         @media (max-width: 600px) {
             .cases-grid {
-                /* НА ТЕЛЕФОНЕ: Оставляем как было (2 колонки резиновые) */
+                /* НА ТЕЛЕФОНЕ: Оставляем как было (2 колонки на всю ширину) */
+                width: 100%; /* Возвращаем ширину */
                 grid-template-columns: repeat(2, 1fr);
+                justify-items: stretch; /* Растягиваем карточки */
                 gap: 10px;
                 padding: 10px;
             }
@@ -283,8 +292,16 @@
             text-align: center; cursor: pointer; transition: 0.3s; 
             display: flex; flex-direction: column; overflow: hidden;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            height: fit-content; /* ВАЖНО: Запрещает карточке тянуться вниз */
+            height: fit-content; 
+            width: 100%; /* Карточка занимает всю ячейку */
         }
+        
+        /* --- ДОБАВИТЬ ЭТО ДЛЯ СВАЙПА ПАЛЬЦЕМ --- */
+        .content-area, .case-window-items, .nav-tabs {
+            -webkit-overflow-scrolling: touch; /* Включает плавный свайп на айфонах */
+            overscroll-behavior: contain;
+        }
+
         .case-card:hover { transform: translateY(-5px); border-color: #444; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .case-card:active { transform: scale(0.98); }
         
@@ -1461,4 +1478,3 @@ statsData.minesPlayed++;
 </script>
 </body>
 </html>
-
